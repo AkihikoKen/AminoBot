@@ -3,7 +3,6 @@ import amino
 import random
 import datetime
 from gtts import gTTS
-import datetime
 import nekos
 import requests
 import os
