@@ -3,6 +3,7 @@ import amino
 import random
 import datetime
 from gtts import gTTS
+import datetime
 import nekos
 import requests
 import os
@@ -15,16 +16,18 @@ tim = 1
 hm = [0]
 av = []
 nom = 0
+ANTI_SPAM = {}
 
 
 def on_message(data):
 	global ban
 	global tim
 	global nom
+	userid = data.message.author.userId
 	chatId = data.message.chatId
 	nickname = data.message.author.nickname
 	content = data.message.content
-	vrem = data.message.createdTime[17:19]
+	message_time = str(data.message.createdTime[11:19])
 	id = data.message.messageId
 
 	def hentai(a):
@@ -88,19 +91,22 @@ def on_message(data):
 			sub_client.invite_to_chat(userId=str(client.get_from_code(str(content[1][:])).objectId), chatId=chatId)
 			nom = 1
 
-	if abs(int(vrem) - int(hm[0])) <= 2:
-		if ban == 5 and av.count(nickname) > 2:
-			hm[0] = vrem
-			av.clear()
-			ban = 0
-			sub_client.send_message(message='Рейдер кикнут', chatId=data.message.chatId)
-			sub_client.kick(userId=data.message.author.userId, chatId=data.message.chatId, allowRejoin = True)
-		else:
-			ban += 1
-			hm[0] = vrem
-			av.append(nickname)	
-	else:
-		hm[0] = vrem
+	 if ANTI_SPAM.get(userid) is None:
+               ANTI_SPAM[userid] = {"warns": 1, "last_time": message_time}
+         else:
+               now = datetime.datetime.now(tz=pytz.timezone("Europe/London"))
+               last_message = str(ANTI_SPAM[userid]["last_time"]).split(":")
+               difference = datetime.timedelta(hours=now.hour, minutes=now.minute, seconds=now.second) - datetime.timedelta(hours=int(last_message[0]), minutes=int(last_message[1]), seconds=int(last_message[2]))
+               if difference.seconds <= 1:
+                   ANTI_SPAM[userid]["last_time"] = message_time
+                   ANTI_SPAM[userid]["warns"] += 1
+                   if ANTI_SPAM[userid]["warns"] >= 3:
+                       ANTI_SPAM[userid]["warns"] = 1
+                       ANTI_SPAM[userid]["last_time"] = message_time
+                       sub_client.kick(userId=userid, chatId=chatId)
+               else:
+                   ANTI_SPAM[userid]["warns"] = 1
+                   ANTI_SPAM[userid]["last_time"] = message_time
 
 	if data.message.content != None and data.message.type in [1, 50, 58, 57, 59, 100, 101, 102, 103, 104, 105, 106, 107, 109, 110, 113, 114, 115, 116, 124, 125, 126]:
 		sub_client.send_message(message='Рейдеры пошлены нахуй11!', chatId=data.message.chatId)
